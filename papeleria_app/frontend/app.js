@@ -2,7 +2,7 @@
 // CONFIGURACIÓN
 // ================================
 // ⚠️ CAMBIA ESTA URL POR TU BACKEND EN PRODUCCIÓN (HTTPS)
-const API = "https://papeleria-faltantes.netlify.app";
+const API = "https://papeleria-app.onrender.com";
 
 // ================================
 // ELEMENTOS
