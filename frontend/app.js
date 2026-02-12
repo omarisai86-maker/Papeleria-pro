@@ -1,16 +1,31 @@
-// 🔥 CAMBIA ESTO POR TU URL DE RENDER
+// 🔥 URL DE TU BACKEND EN RENDER
 const API_URL = "https://papeleria-app.onrender.com";
+
 
 // ===============================
 // 🎥 ESCANER QR / CÓDIGO DE BARRAS
 // ===============================
+let html5QrCode;
+
 function iniciarEscaner() {
-  const html5QrCode = new Html5Qrcode("reader");
+  html5QrCode = new Html5Qrcode("reader");
 
   Html5Qrcode.getCameras().then(devices => {
     if (devices && devices.length) {
+
+      // 🔎 Buscar cámara trasera automáticamente
+      let backCamera = devices.find(device =>
+        device.label.toLowerCase().includes("back") ||
+        device.label.toLowerCase().includes("rear") ||
+        device.label.toLowerCase().includes("environment")
+      );
+
+      const cameraId = backCamera 
+        ? backCamera.id 
+        : devices[devices.length - 1].id;
+
       html5QrCode.start(
-        devices[0].id,
+        cameraId,
         {
           fps: 10,
           qrbox: 250
@@ -18,8 +33,10 @@ function iniciarEscaner() {
         codigo => {
           document.getElementById("codigo").value = codigo;
           html5QrCode.stop();
-        }
+        },
+        error => {}
       );
+
     }
   }).catch(err => {
     console.log("Error cámara:", err);
@@ -44,22 +61,30 @@ function guardar() {
 
   fetch(`${API_URL}/faltantes`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json" 
+    },
     body: JSON.stringify({
-      codigo,
-      nombre,
-      piezas
+      codigo: codigo || null,
+      nombre: nombre,
+      piezas: Number(piezas)
     })
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) {
+      throw new Error("Error servidor");
+    }
+    return res.json();
+  })
   .then(data => {
     alert("✅ Guardado correctamente");
     limpiarCampos();
     verFaltantes();
+    iniciarEscaner(); // reinicia cámara después de guardar
   })
   .catch(err => {
-    alert("❌ Error al guardar");
-    console.log(err);
+    console.log("ERROR REAL:", err);
+    alert("❌ Error al guardar. Revisa conexión o servidor.");
   });
 }
 
@@ -112,6 +137,9 @@ function buscarCodigo() {
       } else {
         alert("Producto no encontrado");
       }
+    })
+    .catch(err => {
+      console.log("Error búsqueda:", err);
     });
 }
 
@@ -139,6 +167,9 @@ function buscarNombre(texto) {
         `;
         lista.appendChild(li);
       });
+    })
+    .catch(err => {
+      console.log("Error búsqueda nombre:", err);
     });
 }
 
@@ -161,5 +192,7 @@ function limpiarCampos() {
 }
 
 
-// Cargar lista al abrir
+// ===============================
+// 🚀 CARGAR LISTA AL ABRIR
+// ===============================
 verFaltantes();
