@@ -59,7 +59,7 @@ function guardar() {
     return;
   }
 
-  fetch(`${API_URL}/faltantes`, {
+  fetch(`${API_URL}/guardar`, {
     method: "POST",
     headers: { 
       "Content-Type": "application/json" 
@@ -80,14 +80,12 @@ function guardar() {
     alert("✅ Guardado correctamente");
     limpiarCampos();
     verFaltantes();
-    iniciarEscaner(); // reinicia cámara después de guardar
   })
   .catch(err => {
     console.log("ERROR REAL:", err);
     alert("❌ Error al guardar. Revisa conexión o servidor.");
   });
 }
-
 
 // ===============================
 // 📦 VER FALTANTES
