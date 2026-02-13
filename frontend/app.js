@@ -70,21 +70,33 @@ function verFaltantes() {
       const lista = document.getElementById("lista");
       lista.innerHTML = "";
 
+      let totalCompra = 0;
+      let totalGanancia = 0;
+
       data.forEach(item => {
+
+        totalCompra += (item.precio_compra || 0) * item.piezas;
+        totalGanancia += ((item.precio_venta || 0) - (item.precio_compra || 0)) * item.piezas;
+
         const li = document.createElement("li");
         li.innerHTML = `
           <strong>${item.nombre}</strong><br>
           Código: ${item.codigo || "N/A"}<br>
-          Piezas: ${item.piezas}<br>
-          Compra: $${item.precio_compra || 0}<br>
-          Venta: $${item.precio_venta || 0}<br>
+          Piezas: ${item.piezas}
+          <div class="precio">
+            Compra: $${item.precio_compra || 0} <br>
+            Venta: $${item.precio_venta || 0}
+          </div>
           <button onclick="eliminar('${item.codigo}')">
             ✅ Comprado / Eliminar
           </button>
-          <hr>
         `;
         lista.appendChild(li);
       });
+
+      document.getElementById("totalCompra").innerText = totalCompra.toFixed(2);
+      document.getElementById("totalGanancia").innerText = totalGanancia.toFixed(2);
+
     })
     .catch(err => {
       console.log("Error:", err);
@@ -101,6 +113,14 @@ function limpiarCampos() {
   document.getElementById("piezas").value = "";
   document.getElementById("precio_compra").value = "";
   document.getElementById("porcentaje").value = "";
+}
+
+
+// ===============================
+// 🌙 MODO OSCURO
+// ===============================
+function toggleTheme() {
+  document.body.classList.toggle("dark");
 }
 
 

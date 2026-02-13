@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#2196f3">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Cámara QR / Código -->
+  <!-- Cámara QR -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
@@ -85,11 +85,22 @@
     li {
       padding: 12px;
       border-bottom: 1px solid var(--border);
-      cursor: pointer;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: var(--card);
     }
 
-    li:hover {
-      background: rgba(255,255,255,0.05);
+    .totales {
+      background: var(--card);
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .precio {
+      font-size: 14px;
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -106,7 +117,6 @@
 <input type="number" id="precio_compra" placeholder="Precio compra">
 <input type="number" id="porcentaje" placeholder="% ganancia">
 
-
 <button onclick="guardar()">💾 Guardar</button>
 <button onclick="buscarCodigo()">🔎 Buscar Código</button>
 <button onclick="verFaltantes()">📦 Ver Faltantes</button>
@@ -116,6 +126,11 @@
 <input placeholder="Buscar por nombre..." onkeyup="buscarNombre(this.value)">
 
 <ul id="lista"></ul>
+
+<div class="totales">
+  💰 Total Inversión: $<span id="totalCompra">0</span><br>
+  📈 Ganancia Estimada: $<span id="totalGanancia">0</span>
+</div>
 
 <script src="app.js"></script>
 

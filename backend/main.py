@@ -6,7 +6,7 @@ import os
 app = FastAPI()
 
 # ==========================
-# CORS (permite conexión desde tu frontend)
+# CORS
 # ==========================
 app.add_middleware(
     CORSMiddleware,
@@ -24,6 +24,8 @@ DB_PATH = os.path.join(os.getcwd(), "productos.db")
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+
+    # Crear tabla básica si no existe
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS productos (
             codigo TEXT PRIMARY KEY,
@@ -31,6 +33,23 @@ def init_db():
             piezas INTEGER
         )
     """)
+
+    # Agregar columnas nuevas si no existen
+    try:
+        cursor.execute("ALTER TABLE productos ADD COLUMN precio_compra REAL DEFAULT 0")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE productos ADD COLUMN porcentaje REAL DEFAULT 0")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE productos ADD COLUMN precio_venta REAL DEFAULT 0")
+    except:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -45,43 +64,6 @@ def get_db():
 @app.get("/")
 def home():
     return {"status": "API Papelería OK"}
-
-# ==========================
-# BUSCAR POR CÓDIGO
-# ==========================
-@app.get("/buscar_codigo/{codigo}")
-def buscar_codigo(codigo: str):
-    conn = get_db()
-    c = conn.cursor()
-    c.execute(
-        "SELECT codigo, nombre, piezas FROM productos WHERE codigo = ?",
-        (codigo,)
-    )
-    r = c.fetchone()
-    conn.close()
-
-    if r:
-        return {"codigo": r[0], "nombre": r[1], "piezas": r[2]}
-    return {}
-
-# ==========================
-# BUSCAR POR NOMBRE
-# ==========================
-@app.get("/buscar_nombre/{texto}")
-def buscar_nombre(texto: str):
-    conn = get_db()
-    c = conn.cursor()
-    c.execute(
-        "SELECT codigo, nombre, piezas FROM productos WHERE nombre LIKE ?",
-        (f"%{texto}%",)
-    )
-    rows = c.fetchall()
-    conn.close()
-
-    return [
-        {"codigo": r[0], "nombre": r[1], "piezas": r[2]}
-        for r in rows
-    ]
 
 # ==========================
 # GUARDAR PRODUCTO
@@ -100,9 +82,9 @@ def guardar(p: dict):
         (codigo, nombre, piezas, precio_compra, porcentaje, precio_venta)
         VALUES (?, ?, ?, ?, ?, ?)
     """, (
-        p["codigo"],
-        p["nombre"],
-        p["piezas"],
+        p.get("codigo"),
+        p.get("nombre"),
+        p.get("piezas"),
         precio_compra,
         porcentaje,
         precio_venta
@@ -111,7 +93,6 @@ def guardar(p: dict):
     conn.close()
 
     return {"ok": True, "precio_venta": precio_venta}
-
 
 # ==========================
 # LISTA DE FALTANTES
@@ -152,3 +133,54 @@ def eliminar_producto(codigo: str):
     conn.commit()
     conn.close()
     return {"ok": True}
+
+# ==========================
+# BUSCAR POR CÓDIGO
+# ==========================
+@app.get("/buscar_codigo/{codigo}")
+def buscar_codigo(codigo: str):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "SELECT codigo, nombre, piezas, precio_compra, porcentaje, precio_venta FROM productos WHERE codigo = ?",
+        (codigo,)
+    )
+    r = c.fetchone()
+    conn.close()
+
+    if r:
+        return {
+            "codigo": r[0],
+            "nombre": r[1],
+            "piezas": r[2],
+            "precio_compra": r[3],
+            "porcentaje": r[4],
+            "precio_venta": r[5]
+        }
+    return {}
+
+# ==========================
+# BUSCAR POR NOMBRE
+# ==========================
+@app.get("/buscar_nombre/{texto}")
+def buscar_nombre(texto: str):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "SELECT codigo, nombre, piezas, precio_compra, porcentaje, precio_venta FROM productos WHERE nombre LIKE ?",
+        (f"%{texto}%",)
+    )
+    rows = c.fetchall()
+    conn.close()
+
+    return [
+        {
+            "codigo": r[0],
+            "nombre": r[1],
+            "piezas": r[2],
+            "precio_compra": r[3],
+            "porcentaje": r[4],
+            "precio_venta": r[5]
+        }
+        for r in rows
+    ]
