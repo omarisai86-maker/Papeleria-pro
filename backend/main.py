@@ -88,16 +88,30 @@ def buscar_nombre(texto: str):
 # ==========================
 @app.post("/guardar")
 def guardar(p: dict):
+    precio_compra = float(p.get("precio_compra", 0))
+    porcentaje = float(p.get("porcentaje", 0))
+
+    precio_venta = precio_compra + (precio_compra * porcentaje / 100)
+
     conn = get_db()
     c = conn.cursor()
     c.execute("""
-        INSERT OR REPLACE INTO productos (codigo, nombre, piezas)
-        VALUES (?, ?, ?)
-    """, (p["codigo"], p["nombre"], p["piezas"]))
+        INSERT OR REPLACE INTO productos 
+        (codigo, nombre, piezas, precio_compra, porcentaje, precio_venta)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        p["codigo"],
+        p["nombre"],
+        p["piezas"],
+        precio_compra,
+        porcentaje,
+        precio_venta
+    ))
     conn.commit()
     conn.close()
 
-    return {"ok": True}
+    return {"ok": True, "precio_venta": precio_venta}
+
 
 # ==========================
 # LISTA DE FALTANTES
@@ -107,7 +121,7 @@ def faltantes():
     conn = get_db()
     c = conn.cursor()
     c.execute("""
-        SELECT codigo, nombre, piezas
+        SELECT codigo, nombre, piezas, precio_compra, porcentaje, precio_venta
         FROM productos
         WHERE piezas <= 5
         ORDER BY piezas ASC
@@ -116,6 +130,25 @@ def faltantes():
     conn.close()
 
     return [
-        {"codigo": r[0], "nombre": r[1], "piezas": r[2]}
+        {
+            "codigo": r[0],
+            "nombre": r[1],
+            "piezas": r[2],
+            "precio_compra": r[3],
+            "porcentaje": r[4],
+            "precio_venta": r[5]
+        }
         for r in rows
     ]
+
+# ==========================
+# ELIMINAR PRODUCTO
+# ==========================
+@app.delete("/eliminar/{codigo}")
+def eliminar_producto(codigo: str):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("DELETE FROM productos WHERE codigo = ?", (codigo,))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
