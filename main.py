@@ -57,9 +57,12 @@ init_db()
 # CARGAR EXCEL
 # =========================
 
+import os
+
 def cargar_productos_excel():
     try:
-        wb = load_workbook("productos.xlsx")
+        ruta = os.path.join(os.getcwd(), "productos.xlsx")
+        wb = load_workbook(ruta)
         sheet = wb.active
         productos = {}
 
@@ -68,14 +71,10 @@ def cargar_productos_excel():
             productos[str(codigo)] = nombre
 
         return productos
-    except:
+    except Exception as e:
+        print("ERROR LEYENDO EXCEL:", e)
         return {}
 
-@app.get("/buscar_producto/{codigo}")
-def buscar_producto(codigo: str):
-    productos = cargar_productos_excel()
-    nombre = productos.get(codigo, "")
-    return {"nombre": nombre}
 
 # =========================
 # PRODUCTOS
