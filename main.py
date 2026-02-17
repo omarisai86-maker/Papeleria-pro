@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import sqlite3
 from openpyxl import load_workbook
+import os
 
 app = FastAPI()
 
@@ -54,27 +56,35 @@ def init_db():
 init_db()
 
 # =========================
-# CARGAR EXCEL
+# CARGAR EXCEL AL INICIAR
 # =========================
 
-import os
+PRODUCTOS_EXCEL = {}
 
-def cargar_productos_excel():
+def cargar_excel():
+    global PRODUCTOS_EXCEL
     try:
         ruta = os.path.join(os.getcwd(), "productos.xlsx")
         wb = load_workbook(ruta)
         sheet = wb.active
-        productos = {}
 
         for row in sheet.iter_rows(min_row=2, values_only=True):
             codigo, nombre = row
-            productos[str(codigo)] = nombre
+            if codigo is not None:
+                PRODUCTOS_EXCEL[str(codigo).strip()] = str(nombre).strip()
 
-        return productos
+        print("Productos cargados:", len(PRODUCTOS_EXCEL))
+
     except Exception as e:
-        print("ERROR LEYENDO EXCEL:", e)
-        return {}
+        print("Error cargando Excel:", e)
 
+cargar_excel()
+
+@app.get("/buscar_producto/{codigo}")
+def buscar_producto(codigo: str):
+    codigo = codigo.strip()
+    nombre = PRODUCTOS_EXCEL.get(codigo, "")
+    return {"nombre": nombre}
 
 # =========================
 # PRODUCTOS
@@ -144,4 +154,12 @@ def obtener_historial():
     conn.close()
     return datos
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# =========================
+# FRONTEND
+# =========================
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+def home():
+    return FileResponse("static/index.html")
