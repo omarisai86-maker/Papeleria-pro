@@ -59,19 +59,28 @@ init_db()
 # CARGAR EXCEL AL INICIAR
 # =========================
 
-PRODUCTOS_EXCEL = {}
+PRODUCTOS_EXCEL = {}  # 🔥 ESTA LÍNEA FALTABA
 
 def cargar_excel():
     global PRODUCTOS_EXCEL
     try:
         ruta = os.path.join(os.getcwd(), "productos.xlsx")
-        wb = load_workbook(ruta)
+        wb = load_workbook(ruta, data_only=True)
         sheet = wb.active
 
         for row in sheet.iter_rows(min_row=2, values_only=True):
             codigo, nombre = row
+
             if codigo is not None:
-                PRODUCTOS_EXCEL[str(codigo).strip()] = str(nombre).strip()
+
+                # Convertir código correctamente
+                if isinstance(codigo, float):
+                    codigo = str(int(codigo))
+                else:
+                    codigo = str(codigo)
+
+                codigo = codigo.strip()
+                PRODUCTOS_EXCEL[codigo] = str(nombre).strip()
 
         print("Productos cargados:", len(PRODUCTOS_EXCEL))
 
