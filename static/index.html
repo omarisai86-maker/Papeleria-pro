@@ -130,23 +130,34 @@ async function cargarHistorial() {
 }
 
 async function agregar() {
-    const compraValor = parseFloat(compra.value);
-    const porcentajeValor = parseFloat(porcentaje.value);
-    const ventaValor = compraValor + (compraValor * porcentajeValor / 100);
 
-    await fetch("/productos", {
+    const codigoInput = document.getElementById("codigo").value;
+    const nombreInput = document.getElementById("nombre").value;
+    const compraInput = parseFloat(document.getElementById("compra").value) || 0;
+    const porcentajeInput = parseFloat(document.getElementById("porcentaje").value) || 0;
+    const existenteInput = parseInt(document.getElementById("existente").value) || 0;
+    const comprarInput = parseInt(document.getElementById("comprar_cantidad").value) || 0;
+
+    const ventaCalculada = compraInput + (compraInput * porcentajeInput / 100);
+
+    const respuesta = await fetch("/productos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-            codigo: codigo.value,
-            nombre: nombre.value,
-            compra: compraValor,
-            porcentaje: porcentajeValor,
-            venta: ventaValor,
-            cantidad_existente: parseInt(existente.value),
-            cantidad_comprar: parseInt(comprar_cantidad.value)
+            codigo: codigoInput,
+            nombre: nombreInput,
+            compra: compraInput,
+            porcentaje: porcentajeInput,
+            venta: ventaCalculada,
+            cantidad_existente: existenteInput,
+            cantidad_comprar: comprarInput
         })
     });
+
+    const data = await respuesta.json();
+    console.log(data);
 
     cargar();
 }
