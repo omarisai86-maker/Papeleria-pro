@@ -11,22 +11,82 @@
 
 <style>
 body { font-family: Arial; margin: 20px; }
-input, button { padding: 8px; margin: 5px; }
-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-th { background: #f0f0f0; }
-#reader { width: 300px; margin-top: 20px; }
-</style>
 
+/* Pestañas */
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background: #ccc;
+    border-radius: 5px;
+}
+
+.tab-button.active {
+    background: #2c3e50;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+input, button {
+    padding: 8px;
+    margin: 5px;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
+
+th {
+    background: #f0f0f0;
+}
+
+#reader {
+    width: 300px;
+    margin-top: 20px;
+}
+</style>
 </head>
 <body>
 
-<h2>📦 Lista de Faltantes</h2>
+<h2>📦 Papelería PRO</h2>
+
+<!-- BOTONES DE PESTAÑAS -->
+<div class="tabs">
+    <button class="tab-button active" onclick="mostrarTab('captura', this)">📥 Captura</button>
+    <button class="tab-button" onclick="mostrarTab('lista', this)">📦 Lista</button>
+    <button class="tab-button" onclick="mostrarTab('historialTab', this)">📊 Historial</button>
+</div>
+
+<!-- PESTAÑA CAPTURA -->
+<div id="captura" class="tab-content active">
+
+<h3>Agregar Producto</h3>
 
 <button onclick="iniciarCamara()">📷 Escanear</button>
 <div id="reader"></div>
 
-<h3>Agregar Producto</h3>
+<br>
 
 <input id="codigo" placeholder="Código" onblur="buscarNombre()">
 <input id="nombre" placeholder="Nombre">
@@ -36,8 +96,14 @@ th { background: #f0f0f0; }
 <input id="existente" type="number" placeholder="Cantidad existente">
 <input id="comprar_cantidad" type="number" placeholder="Cantidad a comprar">
 
+<br>
 <button onclick="agregar()">Agregar</button>
 
+</div>
+
+<!-- PESTAÑA LISTA -->
+<div id="lista" class="tab-content">
+<h3>📦 Lista de Faltantes</h3>
 <table>
 <thead>
 <tr>
@@ -54,8 +120,11 @@ th { background: #f0f0f0; }
 </thead>
 <tbody id="tabla"></tbody>
 </table>
+</div>
 
-<h2>📊 Historial de Compras</h2>
+<!-- PESTAÑA HISTORIAL -->
+<div id="historialTab" class="tab-content">
+<h3>📊 Historial de Compras</h3>
 <table>
 <thead>
 <tr>
@@ -71,11 +140,29 @@ th { background: #f0f0f0; }
 </thead>
 <tbody id="historial"></tbody>
 </table>
-
-<audio id="beep" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3"></audio>
+</div>
 
 <script>
 
+/* CONTROL DE PESTAÑAS */
+function mostrarTab(id, boton) {
+
+    document.querySelectorAll(".tab-content").forEach(tab => {
+        tab.classList.remove("active");
+    });
+
+    document.querySelectorAll(".tab-button").forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    document.getElementById(id).classList.add("active");
+    boton.classList.add("active");
+
+    if (id === "lista") cargar();
+    if (id === "historialTab") cargarHistorial();
+}
+
+/* BUSCAR PRODUCTO */
 async function buscarNombre() {
     const codigoValor = codigo.value;
     if (!codigoValor) return;
@@ -88,6 +175,7 @@ async function buscarNombre() {
     }
 }
 
+/* CARGAR LISTA */
 async function cargar() {
     const res = await fetch("/productos");
     const data = await res.json();
@@ -109,6 +197,7 @@ async function cargar() {
     });
 }
 
+/* CARGAR HISTORIAL */
 async function cargarHistorial() {
     const res = await fetch("/historial");
     const data = await res.json();
@@ -129,119 +218,79 @@ async function cargarHistorial() {
     });
 }
 
+/* AGREGAR PRODUCTO */
 async function agregar() {
-    try {
 
-        const codigoInput = document.getElementById("codigo").value.trim();
-        const nombreInput = document.getElementById("nombre").value.trim();
-        const compraInput = parseFloat(document.getElementById("compra").value) || 0;
-        const porcentajeInput = parseFloat(document.getElementById("porcentaje").value) || 0;
-        const existenteInput = parseInt(document.getElementById("existente").value) || 0;
-        const comprarInput = parseInt(document.getElementById("comprar_cantidad").value) || 0;
+    const codigoInput = codigo.value;
+    const nombreInput = nombre.value;
+    const compraInput = parseFloat(compra.value) || 0;
+    const porcentajeInput = parseFloat(porcentaje.value) || 0;
+    const existenteInput = parseInt(existente.value) || 0;
+    const comprarInput = parseInt(comprar_cantidad.value) || 0;
 
-        if (!codigoInput || !nombreInput) {
-            alert("Código y Nombre son obligatorios");
-            return;
-        }
+    const ventaCalculada = compraInput + (compraInput * porcentajeInput / 100);
 
-        const ventaCalculada = compraInput + (compraInput * porcentajeInput / 100);
+    await fetch("/productos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            codigo: codigoInput,
+            nombre: nombreInput,
+            compra: compraInput,
+            porcentaje: porcentajeInput,
+            venta: ventaCalculada,
+            cantidad_existente: existenteInput,
+            cantidad_comprar: comprarInput
+        })
+    });
 
-        const respuesta = await fetch(window.location.origin + "/productos", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                codigo: codigoInput,
-                nombre: nombreInput,
-                compra: compraInput,
-                porcentaje: porcentajeInput,
-                venta: ventaCalculada,
-                cantidad_existente: existenteInput,
-                cantidad_comprar: comprarInput
-            })
-        });
+    alert("Producto guardado ✅");
 
-        if (!respuesta.ok) {
-            const errorText = await respuesta.text();
-            console.error("ERROR BACKEND:", errorText);
-            alert("Error del servidor. Revisa consola F12.");
-            return;
-        }
-
-        const data = await respuesta.json();
-        console.log("Guardado:", data);
-
-        alert("Producto guardado correctamente ✅");
-
-        // limpiar formulario
-        document.getElementById("codigo").value = "";
-        document.getElementById("nombre").value = "";
-        document.getElementById("compra").value = "";
-        document.getElementById("porcentaje").value = "";
-        document.getElementById("venta").value = "";
-        document.getElementById("existente").value = "";
-        document.getElementById("comprar_cantidad").value = "";
-
-        cargar();
-
-    } catch (error) {
-        console.error("ERROR TOTAL:", error);
-        alert("No se pudo guardar. Revisa F12.");
-    }
+    codigo.value = "";
+    nombre.value = "";
+    compra.value = "";
+    porcentaje.value = "";
+    venta.value = "";
+    existente.value = "";
+    comprar_cantidad.value = "";
 }
 
+/* COMPRAR */
 async function comprar(id) {
     await fetch(`/productos/${id}`, { method: "DELETE" });
     cargar();
     cargarHistorial();
 }
 
-document.getElementById("compra").addEventListener("input", calcular);
-document.getElementById("porcentaje").addEventListener("input", calcular);
+/* CALCULAR VENTA */
+compra.addEventListener("input", calcular);
+porcentaje.addEventListener("input", calcular);
 
 function calcular() {
-    const compraValor = parseFloat(compra.value);
-    const porcentajeValor = parseFloat(porcentaje.value);
-
-    if (compraValor && porcentajeValor) {
-        venta.value = compraValor + (compraValor * porcentajeValor / 100);
+    if (compra.value && porcentaje.value) {
+        venta.value = compra.value * (1 + porcentaje.value / 100);
     }
 }
 
+/* ESCÁNER */
 let scanner;
 
 function iniciarCamara() {
     scanner = new Html5Qrcode("reader");
 
     Html5Qrcode.getCameras().then(devices => {
-
-        let camaraTrasera = devices.find(device =>
-            device.label.toLowerCase().includes("back") ||
-            device.label.toLowerCase().includes("rear") ||
-            device.label.toLowerCase().includes("environment")
-        );
-
-        let cameraId = camaraTrasera ? camaraTrasera.id : devices[devices.length - 1].id;
+        let cameraId = devices[devices.length - 1].id;
 
         scanner.start(
             cameraId,
             { fps: 10, qrbox: 250 },
             code => {
                 codigo.value = code;
-                document.getElementById("beep").play();
                 scanner.stop();
                 buscarNombre();
             }
         );
     });
-}
-
-cargar();
-cargarHistorial();
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js');
 }
 
 </script>
