@@ -6,7 +6,6 @@
 
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1e293b">
-
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
@@ -52,12 +51,17 @@ body{
 
 /* CONTENIDO */
 .tab-content{
+    opacity:0;
+    transform:translateY(10px);
+    transition:all 0.3s ease;
     display:none;
     padding:20px;
 }
 
 .tab-content.active{
     display:block;
+    opacity:1;
+    transform:translateY(0);
 }
 
 /* CARD */
@@ -69,18 +73,16 @@ body{
     margin-bottom:20px;
 }
 
-/* INPUTS */
 input{
     width:100%;
     padding:10px;
     margin:8px 0;
     border-radius:8px;
     border:1px solid #cbd5e1;
-    font-size:14px;
 }
 
 button{
-    padding:10px 15px;
+    padding:10px;
     border:none;
     border-radius:8px;
     cursor:pointer;
@@ -97,7 +99,6 @@ button{
     color:white;
 }
 
-/* TABLE */
 table{
     width:100%;
     border-collapse:collapse;
@@ -114,15 +115,32 @@ td{
     text-align:center;
 }
 
-/* BUSCADOR */
-.search-box{
-    margin-bottom:15px;
+/* TOAST */
+.toast{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:#111827;
+    color:white;
+    padding:12px 20px;
+    border-radius:10px;
+    opacity:0;
+    transition:all 0.4s ease;
+    font-weight:500;
+    box-shadow:0 5px 20px rgba(0,0,0,0.2);
+    z-index:9999;
 }
 
-#reader{
-    width:100%;
-    margin-top:10px;
+.toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
 }
+
+.toast.success{ background:#16a34a; }
+.toast.error{ background:#dc2626; }
+
+#reader{ width:100%; margin-top:10px; }
 
 </style>
 </head>
@@ -138,7 +156,6 @@ td{
 
 <!-- CAPTURA -->
 <div id="captura" class="tab-content active">
-
 <div class="card">
 
 <button class="btn-primary" onclick="iniciarCamara()">📷 Escanear</button>
@@ -159,10 +176,9 @@ td{
 
 <!-- LISTA -->
 <div id="lista" class="tab-content">
-
 <div class="card">
 
-<input class="search-box" id="buscador" placeholder="🔍 Buscar por código o nombre..." oninput="filtrar()">
+<input id="buscador" placeholder="🔍 Buscar..." oninput="filtrar()">
 
 <table>
 <thead>
@@ -183,7 +199,6 @@ td{
 
 <!-- HISTORIAL -->
 <div id="historialTab" class="tab-content">
-
 <div class="card">
 <table>
 <thead>
@@ -198,10 +213,20 @@ td{
 <tbody id="historial"></tbody>
 </table>
 </div>
-
 </div>
 
+<div id="toast" class="toast"></div>
+
 <script>
+
+/* TOAST */
+function mostrarToast(mensaje,tipo="success"){
+    const toast=document.getElementById("toast");
+    toast.className="toast "+tipo;
+    toast.innerText=mensaje;
+    setTimeout(()=>toast.classList.add("show"),100);
+    setTimeout(()=>toast.classList.remove("show"),3000);
+}
 
 /* TABS */
 function mostrarTab(id,btn){
@@ -214,31 +239,57 @@ function mostrarTab(id,btn){
     if(id==="historialTab") cargarHistorial();
 }
 
-/* BUSCADOR */
+/* BUSCAR */
 function filtrar(){
-    const filtro = buscador.value.toLowerCase();
-    const filas = tabla.getElementsByTagName("tr");
-
+    const filtro=buscador.value.toLowerCase();
+    const filas=tabla.getElementsByTagName("tr");
     for(let i=0;i<filas.length;i++){
-        const texto = filas[i].innerText.toLowerCase();
-        filas[i].style.display = texto.includes(filtro) ? "" : "none";
+        filas[i].style.display=filas[i].innerText.toLowerCase().includes(filtro)?"":"none";
     }
 }
 
-/* BUSCAR NOMBRE */
-async function buscarNombre(){
-    if(!codigo.value) return;
-    const res = await fetch(`/buscar_producto/${codigo.value}`);
-    const data = await res.json();
-    if(data.nombre) nombre.value = data.nombre;
+/* AGREGAR */
+async function agregar(){
+    const ventaCalc=compra.value*(1+porcentaje.value/100);
+
+    const res=await fetch("/productos",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            codigo:codigo.value,
+            nombre:nombre.value,
+            compra:parseFloat(compra.value)||0,
+            porcentaje:parseFloat(porcentaje.value)||0,
+            venta:ventaCalc||0,
+            cantidad_existente:parseInt(existente.value)||0,
+            cantidad_comprar:parseInt(comprar_cantidad.value)||0
+        })
+    });
+
+    if(res.ok){
+        mostrarToast("Producto guardado correctamente ✅");
+        limpiar();
+        cargar();  // 🔥 AHORA SÍ SE ACTUALIZA
+    }else{
+        mostrarToast("Error al guardar ❌","error");
+    }
 }
 
-/* CARGAR LISTA */
-async function cargar(){
-    const res = await fetch("/productos");
-    const data = await res.json();
-    tabla.innerHTML="";
+function limpiar(){
+    codigo.value="";
+    nombre.value="";
+    compra.value="";
+    porcentaje.value="";
+    venta.value="";
+    existente.value="";
+    comprar_cantidad.value="";
+}
 
+/* LISTA */
+async function cargar(){
+    const res=await fetch("/productos");
+    const data=await res.json();
+    tabla.innerHTML="";
     data.forEach(p=>{
         tabla.innerHTML+=`
         <tr>
@@ -254,10 +305,9 @@ async function cargar(){
 
 /* HISTORIAL */
 async function cargarHistorial(){
-    const res = await fetch("/historial");
-    const data = await res.json();
+    const res=await fetch("/historial");
+    const data=await res.json();
     historial.innerHTML="";
-
     data.forEach(p=>{
         historial.innerHTML+=`
         <tr>
@@ -270,30 +320,10 @@ async function cargarHistorial(){
     });
 }
 
-/* AGREGAR */
-async function agregar(){
-    const ventaCalc = compra.value*(1+porcentaje.value/100);
-
-    await fetch("/productos",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-            codigo:codigo.value,
-            nombre:nombre.value,
-            compra:parseFloat(compra.value)||0,
-            porcentaje:parseFloat(porcentaje.value)||0,
-            venta:ventaCalc||0,
-            cantidad_existente:parseInt(existente.value)||0,
-            cantidad_comprar:parseInt(comprar_cantidad.value)||0
-        })
-    });
-
-    alert("Guardado ✅");
-}
-
 /* COMPRAR */
 async function comprar(id){
     await fetch(`/productos/${id}`,{method:"DELETE"});
+    mostrarToast("Producto comprado 🛒");
     cargar();
     cargarHistorial();
 }
@@ -301,27 +331,10 @@ async function comprar(id){
 /* CALCULAR */
 compra.addEventListener("input",calc);
 porcentaje.addEventListener("input",calc);
-
 function calc(){
     if(compra.value && porcentaje.value){
-        venta.value = compra.value*(1+porcentaje.value/100);
+        venta.value=compra.value*(1+porcentaje.value/100);
     }
-}
-
-/* ESCANER */
-function iniciarCamara(){
-    const scanner = new Html5Qrcode("reader");
-    Html5Qrcode.getCameras().then(devices=>{
-        scanner.start(
-            devices[devices.length-1].id,
-            {fps:10,qrbox:250},
-            code=>{
-                codigo.value=code;
-                scanner.stop();
-                buscarNombre();
-            }
-        );
-    });
 }
 
 </script>
