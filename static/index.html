@@ -130,36 +130,65 @@ async function cargarHistorial() {
 }
 
 async function agregar() {
+    try {
 
-    const codigoInput = document.getElementById("codigo").value;
-    const nombreInput = document.getElementById("nombre").value;
-    const compraInput = parseFloat(document.getElementById("compra").value) || 0;
-    const porcentajeInput = parseFloat(document.getElementById("porcentaje").value) || 0;
-    const existenteInput = parseInt(document.getElementById("existente").value) || 0;
-    const comprarInput = parseInt(document.getElementById("comprar_cantidad").value) || 0;
+        const codigoInput = document.getElementById("codigo").value.trim();
+        const nombreInput = document.getElementById("nombre").value.trim();
+        const compraInput = parseFloat(document.getElementById("compra").value) || 0;
+        const porcentajeInput = parseFloat(document.getElementById("porcentaje").value) || 0;
+        const existenteInput = parseInt(document.getElementById("existente").value) || 0;
+        const comprarInput = parseInt(document.getElementById("comprar_cantidad").value) || 0;
 
-    const ventaCalculada = compraInput + (compraInput * porcentajeInput / 100);
+        if (!codigoInput || !nombreInput) {
+            alert("Código y Nombre son obligatorios");
+            return;
+        }
 
-    const respuesta = await fetch("/productos", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            codigo: codigoInput,
-            nombre: nombreInput,
-            compra: compraInput,
-            porcentaje: porcentajeInput,
-            venta: ventaCalculada,
-            cantidad_existente: existenteInput,
-            cantidad_comprar: comprarInput
-        })
-    });
+        const ventaCalculada = compraInput + (compraInput * porcentajeInput / 100);
 
-    const data = await respuesta.json();
-    console.log(data);
+        const respuesta = await fetch(window.location.origin + "/productos", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                codigo: codigoInput,
+                nombre: nombreInput,
+                compra: compraInput,
+                porcentaje: porcentajeInput,
+                venta: ventaCalculada,
+                cantidad_existente: existenteInput,
+                cantidad_comprar: comprarInput
+            })
+        });
 
-    cargar();
+        if (!respuesta.ok) {
+            const errorText = await respuesta.text();
+            console.error("ERROR BACKEND:", errorText);
+            alert("Error del servidor. Revisa consola F12.");
+            return;
+        }
+
+        const data = await respuesta.json();
+        console.log("Guardado:", data);
+
+        alert("Producto guardado correctamente ✅");
+
+        // limpiar formulario
+        document.getElementById("codigo").value = "";
+        document.getElementById("nombre").value = "";
+        document.getElementById("compra").value = "";
+        document.getElementById("porcentaje").value = "";
+        document.getElementById("venta").value = "";
+        document.getElementById("existente").value = "";
+        document.getElementById("comprar_cantidad").value = "";
+
+        cargar();
+
+    } catch (error) {
+        console.error("ERROR TOTAL:", error);
+        alert("No se pudo guardar. Revisa F12.");
+    }
 }
 
 async function comprar(id) {
